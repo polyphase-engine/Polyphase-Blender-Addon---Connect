@@ -7,7 +7,7 @@ Bridge between Blender and the Polyphase Engine for scene export with per-object
 1. Download the zip file from the Releases area of this repo.
 2. Open Blender (4.0+)
 3. Go to **Edit > Preferences > Add-ons > Install**
-4. Navigate to the downloaded `octave-gameengine-connect.zip` and install it.
+4. Navigate to the downloaded `polyphase-gameengine-connect.zip` and install it.
 5. Enable **"Polyphase Game Engine Connector"** in the add-ons list if it isn't automatically.
 
 ## Getting Started

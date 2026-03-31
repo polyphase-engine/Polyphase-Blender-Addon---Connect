@@ -21,13 +21,13 @@ jobs:
 
       - name: Package addon zip
         run: |
-          mkdir -p octave-gameengine-connect
-          cp __init__.py octave-gameengine-connect/
-          zip -r octave-gameengine-connect-${{ steps.tag.outputs.version }}.zip octave-gameengine-connect/
+          mkdir -p polyphase-gameengine-connect
+          cp __init__.py polyphase-gameengine-connect/
+          zip -r polyphase-gameengine-connect-${{ steps.tag.outputs.version }}.zip polyphase-gameengine-connect/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ steps.tag.outputs.version }}
           generate_release_notes: true
-          files: octave-gameengine-connect-${{ steps.tag.outputs.version }}.zip
+          files: polyphase-gameengine-connect-${{ steps.tag.outputs.version }}.zip
