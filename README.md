@@ -1,6 +1,6 @@
-# Octave Game Engine Connector — Blender Addon
+# Polyphase Game Engine Connector — Blender Addon
 
-Bridge between Blender and the Octave Engine for scene export with per-object metadata.
+Bridge between Blender and the Polyphase Engine for scene export with per-object metadata.
 
 ## Installation
 
@@ -8,13 +8,13 @@ Bridge between Blender and the Octave Engine for scene export with per-object me
 2. Open Blender (4.0+)
 3. Go to **Edit > Preferences > Add-ons > Install**
 4. Navigate to the downloaded `octave-gameengine-connect.zip` and install it.
-5. Enable **"Octave Game Engine Connector"** in the add-ons list if it isn't automatically.
+5. Enable **"Polyphase Game Engine Connector"** in the add-ons list if it isn't automatically.
 
 ## Getting Started
 
 1. Open the **N-panel** in the 3D Viewport (press `N`)
-2. Select the **OctaveEngine** tab
-3. Set the **Project Dir** to the root of your Octave project (the folder containing `Assets/` and `Scripts/`)
+2. Select the **PolyphaseEngine** tab
+3. Set the **Project Dir** to the root of your Polyphase project (the folder containing `Assets/` and `Scripts/`)
 4. The addon automatically scans the project and shows a status line: `Assets: N | Scripts: N`
    ![ScanProject](./docs/SetProjectCached.png)
 
@@ -35,7 +35,7 @@ When you open a `.blend` file that already has a project directory set, the addo
 
 ## Per-Object Properties
 
-Select any object and open **Properties > Object > Octave Data** to configure how it will be imported into the Octave Editor.
+Select any object and open **Properties > Object > Polyphase Data** to configure how it will be imported into the Polyphase Editor.
 ![ObjectProps](./docs/ObjectProps.png)
 ![OctaveData_Set](./docs/OctaveData_Set.png)
 
@@ -51,7 +51,7 @@ Dropdown controlling the node type created on import (meshes only):
 
 ![OctaveData_SetMeshType](./docs/OctaveData_SetMeshType.png)
 
-### Octave Asset
+### Polyphase Asset
 
 Search field to link an existing project asset by its project-relative path (e.g. `Assets/Meshes/SM_Cube`). When set, the Editor resolves the asset by UUID first, then by name, falling back to the embedded glTF mesh.
 
@@ -60,7 +60,7 @@ A magnifying-glass button next to the field auto-matches the asset based on the 
 
 ### Material Type
 
-Dropdown for the material shading type on import. Only applies when no Octave Asset is set:
+Dropdown for the material shading type on import. Only applies when no Polyphase Asset is set:
 
 | Value                  | Description                  |
 | ---------------------- | ---------------------------- |
@@ -87,16 +87,16 @@ Boolean toggle shown when a Camera object is selected. When enabled, the exporte
 
 ## Match Asset
 
-The addon can automatically match Octave assets to Blender objects based on their names.
+The addon can automatically match Polyphase assets to Blender objects based on their names.
 
 ### Single Object
 
-In **Properties > Object > Octave Data**, click the magnifying-glass icon next to the **Octave Asset** field. The addon matches the active object's name against the asset catalog and fills in the field.
+In **Properties > Object > Polyphase Data**, click the magnifying-glass icon next to the **Polyphase Asset** field. The addon matches the active object's name against the asset catalog and fills in the field.
 ![MatchAssets](./docs/MatchAssets_B.png)
 
 ### Bulk Match
 
-In the **3D Viewport > Sidebar > OctaveEngine** tab, click **Match Assets** to auto-match all selected objects at once. Camera objects are skipped. A report shows how many objects were matched.
+In the **3D Viewport > Sidebar > PolyphaseEngine** tab, click **Match Assets** to auto-match all selected objects at once. Camera objects are skipped. A report shows how many objects were matched.
 ![MatchAssets](./docs/MatchAssets.png)
 
 ### Matching Algorithm
@@ -112,7 +112,7 @@ The first exact match wins immediately; otherwise the best fuzzy match is used.
 
 ## Exporting
 
-1. Go to **File > Export > Octave Engine Scene (.glb)**
+1. Go to **File > Export > Polyphase Engine Scene (.glb)**
 2. Choose the output path and click **Export**
 
 Export options:
@@ -120,7 +120,7 @@ Export options:
 - **Selected Only** — export only selected objects instead of the full scene
 - **Apply Modifiers** — apply modifiers before exporting (enabled by default)
 
-The addon syncs all Octave properties to Blender custom properties, then invokes the glTF exporter with `export_extras=True` to embed the metadata into each node's `extras` block. The scene is exported as a single `.glb` binary file.
+The addon syncs all Polyphase properties to Blender custom properties, then invokes the glTF exporter with `export_extras=True` to embed the metadata into each node's `extras` block. The scene is exported as a single `.glb` binary file.
 
 ![Export](./docs/Export.png)
 ![Export](./docs/Export_Panel.png)
@@ -161,7 +161,7 @@ Each node in the exported GLB file may contain an `extras` object:
 
 ## Editor Import
 
-The Octave Editor reads these extras during **Import Scene** (when the "Apply glTF Extras" checkbox is enabled),
+The Polyphase Editor reads these extras during **Import Scene** (when the "Apply glTF Extras" checkbox is enabled),
 
 ### Import Scene
 

@@ -1,10 +1,10 @@
 bl_info = {
-    "name": "Octave Game Engine Connector",
+    "name": "Polyphase Game Engine Connector",
     "author": "Justin Jaro",
     "version": (1, 1, 0),
     "blender": (4, 0, 0),
-    "location": "Properties > Object > Octave Data, File > Export, 3D Viewport > Sidebar > OctaveEngine",
-    "description": "Set Octave-specific metadata per object and export .gltf with extras",
+    "location": "Properties > Object > Polyphase Data, File > Export, 3D Viewport > Sidebar > PolyphaseEngine",
+    "description": "Set Polyphase-specific metadata per object and export .gltf with extras",
     "category": "Import-Export",
 }
 
@@ -29,10 +29,10 @@ from bpy_extras.io_utils import ExportHelper
 
 
 # ---------------------------------------------------------------------------
-# OctHashString – replicates Engine/Source/Engine/Utilities.cpp:377-398
+# PolyHashString – replicates Engine/Source/Engine/Utilities.cpp:377-398
 # ---------------------------------------------------------------------------
 
-def oct_hash_string(key):
+def poly_hash_string(key):
     h = 0
     for ch in key:
         ki = ord(ch)
@@ -56,7 +56,7 @@ KNOWN_ASSET_TYPES = [
     "Texture",
 ]
 
-TYPE_ID_TO_NAME = {oct_hash_string(n): n for n in KNOWN_ASSET_TYPES}
+TYPE_ID_TO_NAME = {poly_hash_string(n): n for n in KNOWN_ASSET_TYPES}
 
 OCT_MAGIC = 0x4F435421
 
@@ -322,7 +322,7 @@ def _get_or_parse(scene, script_path):
     if cache_key in _script_prop_cache:
         return _script_prop_cache[cache_key]
 
-    raw_dir = scene.octave_project_dir
+    raw_dir = scene.polyphase_project_dir
     if not raw_dir:
         return []
 
@@ -340,18 +340,18 @@ def _get_or_parse(scene, script_path):
 # PropertyGroups
 # ---------------------------------------------------------------------------
 
-class OctaveScannedAsset(PropertyGroup):
+class PolyphaseScannedAsset(PropertyGroup):
     name: StringProperty()
     type_name: StringProperty()
     uuid_str: StringProperty()
     relative_path: StringProperty()
 
 
-class OctaveScannedScript(PropertyGroup):
+class PolyphaseScannedScript(PropertyGroup):
     name: StringProperty()
 
 
-class OctaveScriptPropValue(PropertyGroup):
+class PolyphaseScriptPropValue(PropertyGroup):
     name: StringProperty()
     prop_type: IntProperty()  # DatumType int
     value_float: FloatProperty()
@@ -371,27 +371,27 @@ class OctaveScriptPropValue(PropertyGroup):
 # ---------------------------------------------------------------------------
 
 def _rebuild_script_props(obj, scene):
-    """Parse script and rebuild the object's octave_script_props collection."""
-    props = obj.octave_props
+    """Parse script and rebuild the object's polyphase_script_props collection."""
+    props = obj.polyphase_props
     script_path = props.script_file
     if not script_path:
-        obj.octave_script_props.clear()
+        obj.polyphase_script_props.clear()
         return
 
     parsed = _get_or_parse(scene, script_path)
     if not parsed:
-        obj.octave_script_props.clear()
+        obj.polyphase_script_props.clear()
         return
 
     # Snapshot existing values by (name, type)
     old_values = {}
-    for item in obj.octave_script_props:
+    for item in obj.polyphase_script_props:
         old_values[(item.name, item.prop_type)] = _read_prop_value(item)
 
-    obj.octave_script_props.clear()
+    obj.polyphase_script_props.clear()
 
     for pdef in parsed:
-        item = obj.octave_script_props.add()
+        item = obj.polyphase_script_props.add()
         item.name = pdef["name"]
         item.prop_type = pdef["type"]
 
@@ -404,7 +404,7 @@ def _rebuild_script_props(obj, scene):
 
 
 def _read_prop_value(item):
-    """Read the appropriate value field from an OctaveScriptPropValue."""
+    """Read the appropriate value field from an PolyphaseScriptPropValue."""
     t = item.prop_type
     if t == 0:
         return item.value_int
@@ -430,7 +430,7 @@ def _read_prop_value(item):
 
 
 def _write_prop_value(item, value):
-    """Write a value to the appropriate field of an OctaveScriptPropValue."""
+    """Write a value to the appropriate field of an PolyphaseScriptPropValue."""
     t = item.prop_type
     if t == 0:
         item.value_int = int(value)
@@ -462,10 +462,10 @@ def _on_script_file_changed(self, context):
         _rebuild_script_props(obj, context.scene)
 
 
-class OctaveObjectProperties(PropertyGroup):
+class PolyphaseObjectProperties(PropertyGroup):
     mesh_type: EnumProperty(
         name="Mesh Type",
-        description="How this object should be imported into Octave",
+        description="How this object should be imported into Polyphase",
         items=[
             ("NODE3D", "Node3D", "Import as plain Node3D (no mesh)"),
             ("STATIC_MESH", "StaticMesh", "Import as StaticMesh3D"),
@@ -473,8 +473,8 @@ class OctaveObjectProperties(PropertyGroup):
         ],
         default="STATIC_MESH",
     )
-    octave_asset: StringProperty(
-        name="Octave Asset",
+    polyphase_asset: StringProperty(
+        name="Polyphase Asset",
         description="Asset name to link instead of the imported mesh",
         default="",
     )
@@ -486,7 +486,7 @@ class OctaveObjectProperties(PropertyGroup):
     )
     material_type: EnumProperty(
         name="Material Type",
-        description="Material shading type for imported meshes (only applies when no Octave Asset is set)",
+        description="Material shading type for imported meshes (only applies when no Polyphase Asset is set)",
         items=[
             ("DEFAULT", "Default", "Use scene import default"),
             ("UNLIT", "Unlit", "Unlit material (no lighting)"),
@@ -506,8 +506,8 @@ class OctaveObjectProperties(PropertyGroup):
 # Refresh script properties operator
 # ---------------------------------------------------------------------------
 
-class OCTAVE_OT_refresh_script_props(Operator):
-    bl_idname = "octave.refresh_script_props"
+class POLYPHASE_OT_refresh_script_props(Operator):
+    bl_idname = "polyphase.refresh_script_props"
     bl_label = "Refresh Script Properties"
     bl_description = "Re-parse the Lua script and refresh editable properties"
 
@@ -517,7 +517,7 @@ class OCTAVE_OT_refresh_script_props(Operator):
             self.report({"WARNING"}, "No active object")
             return {"CANCELLED"}
 
-        props = obj.octave_props
+        props = obj.polyphase_props
         script_path = props.script_file
         if not script_path:
             self.report({"WARNING"}, "No script assigned")
@@ -529,7 +529,7 @@ class OCTAVE_OT_refresh_script_props(Operator):
         _script_prop_cache.pop(cache_key, None)
 
         _rebuild_script_props(obj, context.scene)
-        n = len(obj.octave_script_props)
+        n = len(obj.polyphase_script_props)
         self.report({"INFO"}, f"Refreshed: {n} editable properties")
         return {"FINISHED"}
 
@@ -573,7 +573,7 @@ def _do_refresh(scene):
     global _script_prop_cache
     _script_prop_cache.clear()
 
-    raw = scene.octave_project_dir
+    raw = scene.polyphase_project_dir
     if not raw:
         return (0, 0)
 
@@ -588,17 +588,17 @@ def _do_refresh(scene):
     if window:
         window.cursor_set('WAIT')
     wm.progress_begin(0, 1000)
-    bpy.context.workspace.status_text_set("Scanning Octave Project Directory...")
+    bpy.context.workspace.status_text_set("Scanning Polyphase Project Directory...")
 
     def _on_progress(current, total):
         if total > 0:
             wm.progress_update(int(current / total * 1000))
 
     # Refresh asset catalog
-    scene.octave_asset_catalog.clear()
+    scene.polyphase_asset_catalog.clear()
     assets = scan_project_assets(project_dir, progress_fn=_on_progress)
     for a in assets:
-        item = scene.octave_asset_catalog.add()
+        item = scene.polyphase_asset_catalog.add()
         # Strip .oct extension — engine paths are e.g. "Assets/Models/SM_Cube"
         rel_no_ext = a["relative_path"]
         if rel_no_ext.lower().endswith(".oct"):
@@ -609,10 +609,10 @@ def _do_refresh(scene):
         item.relative_path = a["relative_path"]
 
     # Refresh script catalog
-    scene.octave_script_catalog.clear()
+    scene.polyphase_script_catalog.clear()
     scripts = scan_project_scripts(project_dir)
     for s in scripts:
-        item = scene.octave_script_catalog.add()
+        item = scene.polyphase_script_catalog.add()
         item.name = s
 
     wm.progress_end()
@@ -632,14 +632,14 @@ def _on_project_dir_changed(self, context):
 # Refresh Operator
 # ---------------------------------------------------------------------------
 
-class OCTAVE_OT_refresh_project(Operator):
-    bl_idname = "octave.refresh_project"
-    bl_label = "Refresh Octave Project"
+class POLYPHASE_OT_refresh_project(Operator):
+    bl_idname = "polyphase.refresh_project"
+    bl_label = "Refresh Polyphase Project"
     bl_description = "Rescan project directory for assets and scripts"
 
     def execute(self, context):
         scene = context.scene
-        raw = scene.octave_project_dir
+        raw = scene.polyphase_project_dir
         if not raw:
             self.report({"WARNING"}, "No project directory set")
             return {"CANCELLED"}
@@ -664,36 +664,36 @@ class OCTAVE_OT_refresh_project(Operator):
 # Match Asset Operators
 # ---------------------------------------------------------------------------
 
-class OCTAVE_OT_match_asset(Operator):
-    bl_idname = "octave.match_asset"
+class POLYPHASE_OT_match_asset(Operator):
+    bl_idname = "polyphase.match_asset"
     bl_label = "Match Asset"
-    bl_description = "Auto-match Octave Asset based on object name"
+    bl_description = "Auto-match Polyphase Asset based on object name"
 
     def execute(self, context):
         obj = context.object
         if obj is None:
             self.report({"WARNING"}, "No active object")
             return {"CANCELLED"}
-        catalog = context.scene.octave_asset_catalog
+        catalog = context.scene.polyphase_asset_catalog
         if len(catalog) == 0:
             self.report({"WARNING"}, "Asset catalog is empty — refresh project first")
             return {"CANCELLED"}
         match = _match_asset_for_object(obj, catalog)
         if match:
-            obj.octave_props.octave_asset = match
+            obj.polyphase_props.polyphase_asset = match
             self.report({"INFO"}, f"Matched '{obj.name}' -> '{match}'")
         else:
             self.report({"WARNING"}, f"No match found for '{obj.name}'")
         return {"FINISHED"}
 
 
-class OCTAVE_OT_match_assets_selected(Operator):
-    bl_idname = "octave.match_assets_selected"
+class POLYPHASE_OT_match_assets_selected(Operator):
+    bl_idname = "polyphase.match_assets_selected"
     bl_label = "Match Assets"
-    bl_description = "Auto-match Octave Asset for all selected objects"
+    bl_description = "Auto-match Polyphase Asset for all selected objects"
 
     def execute(self, context):
-        catalog = context.scene.octave_asset_catalog
+        catalog = context.scene.polyphase_asset_catalog
         if len(catalog) == 0:
             self.report({"WARNING"}, "Asset catalog is empty — refresh project first")
             return {"CANCELLED"}
@@ -704,7 +704,7 @@ class OCTAVE_OT_match_assets_selected(Operator):
                 continue
             match = _match_asset_for_object(obj, catalog)
             if match:
-                obj.octave_props.octave_asset = match
+                obj.polyphase_props.polyphase_asset = match
                 matched += 1
             else:
                 skipped += 1
@@ -713,37 +713,37 @@ class OCTAVE_OT_match_assets_selected(Operator):
 
 
 # ---------------------------------------------------------------------------
-# Sidebar Panel: Octave Project (3D Viewport N-Panel)
+# Sidebar Panel: Polyphase Project (3D Viewport N-Panel)
 # ---------------------------------------------------------------------------
 
-class OCTAVE_PT_scene_project(Panel):
-    bl_label = "Octave Project"
-    bl_idname = "OCTAVE_PT_scene_project"
+class POLYPHASE_PT_scene_project(Panel):
+    bl_label = "Polyphase Project"
+    bl_idname = "POLYPHASE_PT_scene_project"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "OctaveEngine"
+    bl_category = "PolyphaseEngine"
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
 
-        layout.prop(scene, "octave_project_dir", text="Project Dir")
-        layout.operator("octave.refresh_project", text="Refresh", icon="FILE_REFRESH")
+        layout.prop(scene, "polyphase_project_dir", text="Project Dir")
+        layout.operator("polyphase.refresh_project", text="Refresh", icon="FILE_REFRESH")
 
-        num_assets = len(scene.octave_asset_catalog)
-        num_scripts = len(scene.octave_script_catalog)
+        num_assets = len(scene.polyphase_asset_catalog)
+        num_scripts = len(scene.polyphase_script_catalog)
         layout.label(text=f"Assets: {num_assets}  |  Scripts: {num_scripts}")
 
-        layout.operator("octave.match_assets_selected", text="Match Assets", icon="VIEWZOOM")
+        layout.operator("polyphase.match_assets_selected", text="Match Assets", icon="VIEWZOOM")
 
 
 # ---------------------------------------------------------------------------
 # Object Properties Panel
 # ---------------------------------------------------------------------------
 
-class OCTAVE_PT_object_data(Panel):
-    bl_label = "Octave Data"
-    bl_idname = "OCTAVE_PT_object_data"
+class POLYPHASE_PT_object_data(Panel):
+    bl_label = "Polyphase Data"
+    bl_idname = "POLYPHASE_PT_object_data"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
@@ -755,7 +755,7 @@ class OCTAVE_PT_object_data(Panel):
     def draw(self, context):
         layout = self.layout
         obj = context.object
-        props = obj.octave_props
+        props = obj.polyphase_props
 
         if obj.type == 'CAMERA':
             layout.prop(props, "main_camera")
@@ -763,27 +763,27 @@ class OCTAVE_PT_object_data(Panel):
             layout.prop(props, "mesh_type")
             row = layout.row(align=True)
             row.prop_search(
-                props, "octave_asset",
-                context.scene, "octave_asset_catalog",
-                text="Octave Asset", icon="ASSET_MANAGER",
+                props, "polyphase_asset",
+                context.scene, "polyphase_asset_catalog",
+                text="Polyphase Asset", icon="ASSET_MANAGER",
             )
-            row.operator("octave.match_asset", text="", icon="VIEWZOOM")
+            row.operator("polyphase.match_asset", text="", icon="VIEWZOOM")
             layout.prop(props, "material_type")
 
         layout.prop_search(
             props, "script_file",
-            context.scene, "octave_script_catalog",
+            context.scene, "polyphase_script_catalog",
             text="Script", icon="SCRIPT",
         )
 
         # Script Properties section
-        if props.script_file and len(obj.octave_script_props) > 0:
+        if props.script_file and len(obj.polyphase_script_props) > 0:
             box = layout.box()
             header_row = box.row()
             header_row.label(text="Script Properties", icon="PROPERTIES")
-            header_row.operator("octave.refresh_script_props", text="", icon="FILE_REFRESH")
+            header_row.operator("polyphase.refresh_script_props", text="", icon="FILE_REFRESH")
 
-            for item in obj.octave_script_props:
+            for item in obj.polyphase_script_props:
                 row = box.row()
                 t = item.prop_type
                 if t == 1:    # Float
@@ -803,7 +803,7 @@ class OCTAVE_PT_object_data(Panel):
                 elif t == 7:  # Asset
                     row.prop_search(
                         item, "value_asset",
-                        context.scene, "octave_asset_catalog",
+                        context.scene, "polyphase_asset_catalog",
                         text=item.name, icon="ASSET_MANAGER",
                     )
                 elif t == 8:  # Byte
@@ -817,20 +817,20 @@ class OCTAVE_PT_object_data(Panel):
 # ---------------------------------------------------------------------------
 
 def _sync_custom_properties(obj, scene):
-    """Copy OctaveObjectProperties to Blender custom properties so
+    """Copy PolyphaseObjectProperties to Blender custom properties so
     the glTF exporter writes them into extras automatically."""
-    props = obj.octave_props
+    props = obj.polyphase_props
 
     if obj.type == 'CAMERA':
-        obj["octave_main_camera"] = props.main_camera
+        obj["polyphase_main_camera"] = props.main_camera
     else:
         mesh_type_map = {"NODE3D": "Node3D", "STATIC_MESH": "StaticMesh", "INSTANCED_MESH": "InstancedMesh"}
         obj["mesh_type"] = mesh_type_map.get(props.mesh_type, "StaticMesh")
-        obj["octave_asset"] = props.octave_asset
+        obj["polyphase_asset"] = props.polyphase_asset
         if props.material_type != "DEFAULT":
-            obj["octave_material_type"] = props.material_type
+            obj["polyphase_material_type"] = props.material_type
         else:
-            obj["octave_material_type"] = "LIT"
+            obj["polyphase_material_type"] = "LIT"
 
     # Convert catalog paths to engine-expected format:
     #   "Scripts/Goblin.lua"                      -> "Goblin.lua"
@@ -842,37 +842,37 @@ def _sync_custom_properties(obj, scene):
         parts = script_path.split("/", 3)  # ["Packages", pkgName, "Scripts", rest]
         if len(parts) >= 4 and parts[2] == "Scripts":
             script_path = f"Packages/{parts[1]}/{parts[3]}"
-    obj["octave_script"] = script_path
+    obj["polyphase_script"] = script_path
 
     # Serialize script property overrides
-    if len(obj.octave_script_props) > 0:
+    if len(obj.polyphase_script_props) > 0:
         props_dict = {}
         types_dict = {}
-        for item in obj.octave_script_props:
+        for item in obj.polyphase_script_props:
             types_dict[item.name] = item.prop_type
             val = _read_prop_value(item)
             props_dict[item.name] = val
-        obj["octave_script_props"] = json.dumps(props_dict)
-        obj["octave_script_props_types"] = json.dumps(types_dict)
+        obj["polyphase_script_props"] = json.dumps(props_dict)
+        obj["polyphase_script_props_types"] = json.dumps(types_dict)
     else:
         # Clean up stale keys if script was removed
-        for key in ("octave_script_props", "octave_script_props_types"):
+        for key in ("polyphase_script_props", "polyphase_script_props_types"):
             if key in obj:
                 del obj[key]
 
     # Look up UUID from catalog
-    obj["octave_asset_uuid"] = "0"
-    if props.octave_asset:
-        for item in scene.octave_asset_catalog:
-            if item.name == props.octave_asset:
-                obj["octave_asset_uuid"] = item.uuid_str
+    obj["polyphase_asset_uuid"] = "0"
+    if props.polyphase_asset:
+        for item in scene.polyphase_asset_catalog:
+            if item.name == props.polyphase_asset:
+                obj["polyphase_asset_uuid"] = item.uuid_str
                 break
 
 
-class OCTAVE_OT_export_for_octave(Operator, ExportHelper):
-    bl_idname = "octave.export_for_octave"
-    bl_label = "Octave Engine Scene (.glb)"
-    bl_description = "Export scene as .glb with Octave extras"
+class POLYPHASE_OT_export_for_polyphase(Operator, ExportHelper):
+    bl_idname = "polyphase.export_for_polyphase"
+    bl_label = "Polyphase Engine Scene (.glb)"
+    bl_description = "Export scene as .glb with Polyphase extras"
 
     filename_ext = ".glb"
     filter_glob: StringProperty(default="*.glb", options={"HIDDEN"})
@@ -893,7 +893,7 @@ class OCTAVE_OT_export_for_octave(Operator, ExportHelper):
 
         objects = context.selected_objects if self.export_selected else bpy.data.objects
         for obj in objects:
-            if hasattr(obj, "octave_props"):
+            if hasattr(obj, "polyphase_props"):
                 _sync_custom_properties(obj, scene)
 
         export_kwargs = dict(
@@ -914,7 +914,7 @@ class OCTAVE_OT_export_for_octave(Operator, ExportHelper):
 
         bpy.ops.export_scene.gltf(**export_kwargs)
 
-        self.report({"INFO"}, f"Exported Octave scene to {self.filepath}")
+        self.report({"INFO"}, f"Exported Polyphase scene to {self.filepath}")
         return {"FINISHED"}
 
     def draw(self, context):
@@ -924,16 +924,16 @@ class OCTAVE_OT_export_for_octave(Operator, ExportHelper):
 
 
 def menu_func_export(self, context):
-    self.layout.operator(OCTAVE_OT_export_for_octave.bl_idname, text="Octave Engine Scene (.glb)")
+    self.layout.operator(POLYPHASE_OT_export_for_polyphase.bl_idname, text="Polyphase Engine Scene (.glb)")
 
 
 # ---------------------------------------------------------------------------
 # Scan prompt shown after opening a file with a project directory set
 # ---------------------------------------------------------------------------
 
-class OCTAVE_OT_scan_prompt(Operator):
-    bl_idname = "octave.scan_prompt"
-    bl_label = "Octave Game Engine Connect"
+class POLYPHASE_OT_scan_prompt(Operator):
+    bl_idname = "polyphase.scan_prompt"
+    bl_label = "Polyphase Game Engine Connect"
     bl_options = {'INTERNAL'}
 
     def invoke(self, context, event):
@@ -941,12 +941,12 @@ class OCTAVE_OT_scan_prompt(Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text="An Octave project directory is set for this file.")
+        layout.label(text="A Polyphase project directory is set for this file.")
         layout.label(text="The asset and script catalogs need to be scanned")
         layout.label(text="before you can use the connector.")
         layout.separator()
         layout.label(text="You can also do this later with the Refresh button")
-        layout.label(text="in the OctaveEngine sidebar panel.")
+        layout.label(text="in the PolyphaseEngine sidebar panel.")
 
     def execute(self, context):
         num_assets, num_scripts = _do_refresh(context.scene)
@@ -957,8 +957,8 @@ class OCTAVE_OT_scan_prompt(Operator):
 def _deferred_scan_prompt():
     """Timer callback to show the scan prompt after file load."""
     try:
-        if bpy.context.scene and bpy.context.scene.octave_project_dir:
-            bpy.ops.octave.scan_prompt('INVOKE_DEFAULT')
+        if bpy.context.scene and bpy.context.scene.polyphase_project_dir:
+            bpy.ops.polyphase.scan_prompt('INVOKE_DEFAULT')
     except RuntimeError:
         pass
     return None
@@ -976,10 +976,10 @@ def _load_post_handler(dummy):
     _loading_file = False
 
     scene = bpy.context.scene
-    if scene and scene.octave_project_dir:
+    if scene and scene.polyphase_project_dir:
         # Clear stale catalog data baked into the .blend file
-        scene.octave_asset_catalog.clear()
-        scene.octave_script_catalog.clear()
+        scene.polyphase_asset_catalog.clear()
+        scene.polyphase_script_catalog.clear()
         bpy.app.timers.register(_deferred_scan_prompt, first_interval=0.5)
 
 
@@ -988,18 +988,18 @@ def _load_post_handler(dummy):
 # ---------------------------------------------------------------------------
 
 classes = (
-    OctaveScannedAsset,
-    OctaveScannedScript,
-    OctaveScriptPropValue,
-    OctaveObjectProperties,
-    OCTAVE_OT_refresh_script_props,
-    OCTAVE_OT_scan_prompt,
-    OCTAVE_PT_scene_project,
-    OCTAVE_PT_object_data,
-    OCTAVE_OT_refresh_project,
-    OCTAVE_OT_match_asset,
-    OCTAVE_OT_match_assets_selected,
-    OCTAVE_OT_export_for_octave,
+    PolyphaseScannedAsset,
+    PolyphaseScannedScript,
+    PolyphaseScriptPropValue,
+    PolyphaseObjectProperties,
+    POLYPHASE_OT_refresh_script_props,
+    POLYPHASE_OT_scan_prompt,
+    POLYPHASE_PT_scene_project,
+    POLYPHASE_PT_object_data,
+    POLYPHASE_OT_refresh_project,
+    POLYPHASE_OT_match_asset,
+    POLYPHASE_OT_match_assets_selected,
+    POLYPHASE_OT_export_for_polyphase,
 )
 
 
@@ -1007,18 +1007,18 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.Object.octave_props = PointerProperty(type=OctaveObjectProperties)
-    bpy.types.Object.octave_script_props = CollectionProperty(type=OctaveScriptPropValue)
+    bpy.types.Object.polyphase_props = PointerProperty(type=PolyphaseObjectProperties)
+    bpy.types.Object.polyphase_script_props = CollectionProperty(type=PolyphaseScriptPropValue)
 
-    bpy.types.Scene.octave_project_dir = StringProperty(
-        name="Octave Project Directory",
-        description="Root directory of the Octave project (contains Assets/, Scripts/)",
+    bpy.types.Scene.polyphase_project_dir = StringProperty(
+        name="Polyphase Project Directory",
+        description="Root directory of the Polyphase project (contains Assets/, Scripts/)",
         subtype="DIR_PATH",
         default="",
         update=_on_project_dir_changed,
     )
-    bpy.types.Scene.octave_asset_catalog = CollectionProperty(type=OctaveScannedAsset)
-    bpy.types.Scene.octave_script_catalog = CollectionProperty(type=OctaveScannedScript)
+    bpy.types.Scene.polyphase_asset_catalog = CollectionProperty(type=PolyphaseScannedAsset)
+    bpy.types.Scene.polyphase_script_catalog = CollectionProperty(type=PolyphaseScannedScript)
 
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
@@ -1034,11 +1034,11 @@ def unregister():
 
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
 
-    del bpy.types.Scene.octave_script_catalog
-    del bpy.types.Scene.octave_asset_catalog
-    del bpy.types.Scene.octave_project_dir
-    del bpy.types.Object.octave_script_props
-    del bpy.types.Object.octave_props
+    del bpy.types.Scene.polyphase_script_catalog
+    del bpy.types.Scene.polyphase_asset_catalog
+    del bpy.types.Scene.polyphase_project_dir
+    del bpy.types.Object.polyphase_script_props
+    del bpy.types.Object.polyphase_props
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
